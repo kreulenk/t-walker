@@ -14,11 +14,12 @@ type fileTracker struct {
 }
 
 type model struct {
-	dirInfo fileTracker
-	cursor  int
-	width   int
-	height  int
-	err     error
+	dirInfo          fileTracker
+	cursor           int
+	oneDirBackCursor int
+	width            int
+	height           int
+	err              error
 }
 
 func getInitialFiles() tea.Msg {
@@ -98,11 +99,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "left", "h":
 			if m.dirInfo.path != "/" {
 				m.dirInfo, m.err = m.getCurrDirOneBack()
-				m.cursor = 0
+				m.cursor = m.oneDirBackCursor
 			}
 		case "right", "l":
 			if m.dirInfo.files[m.cursor].IsDir() {
 				m.dirInfo, m.err = m.walkIntoDir()
+				m.oneDirBackCursor = m.cursor
 				m.cursor = 0
 			}
 		}
@@ -113,7 +115,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func shouldPrint(currFileIndex, windowHeight, cursor int) bool {
-	windowHeight = windowHeight - 5 // Other lines also get printed
+	windowHeight = windowHeight - 4 // Other lines also get printed
 	if cursor-currFileIndex < 0 && currFileIndex > windowHeight {
 		return false
 	}
@@ -141,7 +143,23 @@ func (m model) View() string {
 					cursorText = ">" // cursor!
 				}
 
-				s.WriteString(fmt.Sprintf("%s %s %s\n", cursorText, file.Name(), file.Type()))
+				var colorToUse string
+				colorBlue := "\033[34m"
+				colorPurple := "\033[35m"
+				colorReset := "\033[0m"
+
+				if file.IsDir() {
+					colorToUse = colorBlue
+				} else {
+					colorToUse = colorPurple
+				}
+
+				fileInfo, err := file.Info()
+				if err != nil {
+					s.WriteString(fmt.Sprintf("%s%s %-30s %s%s\n", cursorText, colorToUse, file.Name(), "error reading permission bits", colorReset))
+				} else {
+					s.WriteString(fmt.Sprintf("%s%s %-30s %s%s\n", cursorText, colorToUse, file.Name(), fileInfo.Mode(), colorReset))
+				}
 			}
 		}
 	} else {
@@ -149,9 +167,10 @@ func (m model) View() string {
 	}
 
 	s.WriteString("\n")
-	s.WriteString("Current path: " + m.dirInfo.path + "\n")
-	if len(m.dirInfo.files) > 0 {
-		s.WriteString("Current file: " + m.dirInfo.files[m.cursor].Name() + "\n")
+	if m.err != nil {
+		s.WriteString(fmt.Sprintf("Error: %v\n", m.err))
+	} else {
+		s.WriteString("\n")
 	}
 	return s.String()
 }
