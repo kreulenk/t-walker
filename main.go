@@ -93,28 +93,41 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 			// The "up" and "k" keys move the cursor up
-		case "up", "k":
+		case "up":
 			if m.cursor > 0 {
 				m.cursor--
 			}
 
 		// The "down" and "j" keys move the cursor down
-		case "down", "j":
+		case "down":
 			if m.cursor < len(m.dirInfo.files)-1 {
 				m.cursor++
 			}
 
-		case "left", "h":
+		case "left":
 			if m.dirInfo.path != "/" {
 				m.dirInfo, m.err = m.getCurrDirOneBack()
 				m.cursor = m.oneDirBackCursor
 			}
-		case "right", "l":
+		case "right":
 			if m.dirInfo.files[m.cursor].IsDir() {
 				m.dirInfo, m.err = m.walkIntoDir()
 				m.oneDirBackCursor = m.cursor
 				m.cursor = 0
 			}
+		case "c":
+			m.exitCmd = fmt.Sprintf("cd %s", m.dirInfo.path)
+			return m, tea.Quit
+		case "e":
+			if m.dirInfo.files[m.cursor].IsDir() {
+				m.err = fmt.Errorf("cannot open directory %s", m.dirInfo.files[m.cursor].Name())
+			}
+			editor := os.Getenv("EDITOR")
+			if editor == "" {
+				editor = "vi"
+			}
+			m.exitCmd = fmt.Sprintf("%s %s && cd %s", editor, filepath.Join(m.dirInfo.path, m.dirInfo.files[m.cursor].Name()), m.dirInfo.path)
+			return m, tea.Quit
 		case "enter":
 			m.exitCmd = fmt.Sprintf("cd %s", m.dirInfo.path)
 			return m, tea.Quit
