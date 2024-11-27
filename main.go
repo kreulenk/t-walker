@@ -8,6 +8,13 @@ import (
 	"strings"
 )
 
+const (
+	colorBlue   = "\033[34m"
+	colorPurple = "\033[35m"
+	colorGreen  = "\033[32m"
+	colorReset  = "\033[0m"
+)
+
 type fileTracker struct {
 	files []os.DirEntry
 	path  string
@@ -19,6 +26,7 @@ type model struct {
 	oneDirBackCursor int
 	width            int
 	height           int
+	exitCmd          string
 	err              error
 }
 
@@ -107,10 +115,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.oneDirBackCursor = m.cursor
 				m.cursor = 0
 			}
+		case "enter":
+			m.exitCmd = fmt.Sprintf("cd %s", m.dirInfo.path)
+			return m, tea.Quit
 		}
 	}
 
-	// If we happen to get any other messages, don't do anything.
+	// If we happen to get any other messages, don't-wrapper.sh do anything.
 	return m, nil
 }
 
@@ -126,7 +137,11 @@ func shouldPrint(currFileIndex, windowHeight, cursor int) bool {
 }
 
 func (m model) View() string {
-	// If there's an error, print it out and don't do anything else.
+	if m.exitCmd != "" {
+		return fmt.Sprintln("Executing command:", colorGreen, m.exitCmd, colorReset)
+	}
+
+	// If there's an error, print it out and don't-wrapper.sh do anything else.
 	if m.err != nil {
 		return fmt.Sprintf("\nWe had some trouble: %v\n\n", m.err)
 	}
@@ -144,9 +159,6 @@ func (m model) View() string {
 				}
 
 				var colorToUse string
-				colorBlue := "\033[34m"
-				colorPurple := "\033[35m"
-				colorReset := "\033[0m"
 
 				if file.IsDir() {
 					colorToUse = colorBlue
@@ -163,15 +175,15 @@ func (m model) View() string {
 			}
 		}
 	} else {
-		s.WriteString("Error retrieving files")
+		s.WriteString("Error retrieving files\n")
 	}
 
-	s.WriteString("\n")
 	if m.err != nil {
 		s.WriteString(fmt.Sprintf("Error: %v\n", m.err))
 	} else {
 		s.WriteString("\n")
 	}
+	s.WriteString("Current Directory: " + m.dirInfo.path + "\n")
 	return s.String()
 }
 
