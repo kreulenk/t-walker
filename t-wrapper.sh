@@ -13,6 +13,4 @@ output=$(cat "$tempfile")
 rm "$tempfile"
 
 parsedOutput=$(echo "$output" | sed -n 's/.*Executing command: \x1b\[32m \(.*\) \x1b\[0m.*/\1/p' | sed 's/^ *//')
-### Execute the command printed by t-wrapper.sh-walker
-echo "Executing: $parsedOutput"
 eval "$parsedOutput"
