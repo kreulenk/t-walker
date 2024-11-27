@@ -15,6 +15,8 @@ const (
 	colorReset  = "\033[0m"
 )
 
+const colWidth = 50
+
 type fileTracker struct {
 	files []os.DirEntry
 	path  string
@@ -88,33 +90,38 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width, m.height = msg.Width, msg.Height
 
 	case tea.KeyMsg:
+		numColumns := m.width / colWidth
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 
 			// The "up" and "k" keys move the cursor up
 		case "up":
-			if m.cursor > 0 {
-				m.cursor--
+			if m.cursor > numColumns-1 {
+				m.cursor = m.cursor - numColumns
 			}
 
 		// The "down" and "j" keys move the cursor down
 		case "down":
 			if m.cursor < len(m.dirInfo.files)-1 {
-				m.cursor++
+				m.cursor = m.cursor + numColumns
 			}
 
+		case "right":
+			if m.cursor < len(m.dirInfo.files)-1 {
+				m.cursor++
+			}
 		case "left":
+			if m.cursor > 0 {
+				m.cursor--
+			}
+		case "b":
 			if m.dirInfo.path != "/" {
 				m.dirInfo, m.err = m.getCurrDirOneBack()
 				m.cursor = m.oneDirBackCursor
+				m.oneDirBackCursor = 0
 			}
-		case "right":
-			if m.dirInfo.files[m.cursor].IsDir() {
-				m.dirInfo, m.err = m.walkIntoDir()
-				m.oneDirBackCursor = m.cursor
-				m.cursor = 0
-			}
+
 		case "c":
 			m.exitCmd = fmt.Sprintf("cd %s", m.dirInfo.path)
 			return m, tea.Quit
@@ -129,8 +136,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.exitCmd = fmt.Sprintf("%s %s && cd %s", editor, filepath.Join(m.dirInfo.path, m.dirInfo.files[m.cursor].Name()), m.dirInfo.path)
 			return m, tea.Quit
 		case "enter":
-			m.exitCmd = fmt.Sprintf("cd %s", m.dirInfo.path)
-			return m, tea.Quit
+			if m.dirInfo.files[m.cursor].IsDir() {
+				m.dirInfo, m.err = m.walkIntoDir()
+				m.oneDirBackCursor = m.cursor
+				m.cursor = 0
+			}
 		}
 	}
 
@@ -154,7 +164,6 @@ func (m model) View() string {
 		return fmt.Sprintln("Executing command:", colorGreen, m.exitCmd, colorReset)
 	}
 
-	// If there's an error, print it out and don't-wrapper.sh do anything else.
 	if m.err != nil {
 		return fmt.Sprintf("\nWe had some trouble: %v\n\n", m.err)
 	}
@@ -162,17 +171,25 @@ func (m model) View() string {
 	var s strings.Builder
 
 	if len(m.dirInfo.files) > 0 {
-		for i, file := range m.dirInfo.files {
+		// Calculate the number of columns that can fit in the terminal width
+		numColumns := m.width / colWidth
+		if numColumns == 0 {
+			numColumns = 1
+		}
 
-			if shouldPrint(i, m.height, m.cursor) {
-				// Is the cursor pointing at this choice?
+		for i := 0; i < len(m.dirInfo.files); i += numColumns {
+			for j := 0; j < numColumns; j++ {
+				if i+j >= len(m.dirInfo.files) {
+					break
+				}
+
+				file := m.dirInfo.files[i+j]
 				cursorText := " " // no cursor
-				if m.cursor == i {
+				if m.cursor == i+j {
 					cursorText = ">" // cursor!
 				}
 
 				var colorToUse string
-
 				if file.IsDir() {
 					colorToUse = colorBlue
 				} else {
@@ -181,11 +198,16 @@ func (m model) View() string {
 
 				fileInfo, err := file.Info()
 				if err != nil {
-					s.WriteString(fmt.Sprintf("%s%s %-30s %s%s\n", cursorText, colorToUse, file.Name(), "error reading permission bits", colorReset))
+					s.WriteString(fmt.Sprintf("%s%s %-30s %s%s", cursorText, colorToUse, file.Name(), "error reading permission bits", colorReset))
 				} else {
-					s.WriteString(fmt.Sprintf("%s%s %-30s %s%s\n", cursorText, colorToUse, file.Name(), fileInfo.Mode(), colorReset))
+					s.WriteString(fmt.Sprintf("%s%s %-30s %s%s", cursorText, colorToUse, file.Name(), fileInfo.Mode(), colorReset))
+				}
+
+				if j < numColumns-1 {
+					s.WriteString(" | ")
 				}
 			}
+			s.WriteString("\n")
 		}
 	} else {
 		s.WriteString("Error retrieving files\n")
