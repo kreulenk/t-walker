@@ -4,6 +4,7 @@ import (
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -133,8 +134,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if editor == "" {
 				editor = "vi"
 			}
-			m.exitCmd = fmt.Sprintf("%s %s && cd %s", editor, filepath.Join(m.dirInfo.path, m.dirInfo.files[m.cursor].Name()), m.dirInfo.path)
-			return m, tea.Quit
+			openEditorCmd := exec.Command(editor, filepath.Join(m.dirInfo.path, m.dirInfo.files[m.cursor].Name()))
+			openEditorCmd.Stdout = os.Stdout
+			openEditorCmd.Stdin = os.Stdin
+			openEditorCmd.Stderr = os.Stderr
+			err := openEditorCmd.Run()
+			if err != nil {
+				m.err = fmt.Errorf("error opening editor: %v", err)
+			}
 		case "enter":
 			if m.dirInfo.files[m.cursor].IsDir() {
 				m.dirInfo, m.err = m.walkIntoDir()
@@ -197,10 +204,21 @@ func (m model) View() string {
 				}
 
 				fileInfo, err := file.Info()
-				if err != nil {
-					s.WriteString(fmt.Sprintf("%s%s %-30s %s%s", cursorText, colorToUse, file.Name(), "error reading permission bits", colorReset))
+
+				var fileName string
+				if len(file.Name()) > 29 {
+					fileName = file.Name()[0:28] + "…"
 				} else {
-					s.WriteString(fmt.Sprintf("%s%s %-30s %s%s", cursorText, colorToUse, file.Name(), fileInfo.Mode(), colorReset))
+					fileName = file.Name()
+				}
+				if file.IsDir() {
+					fileName = fileName + "/"
+				}
+
+				if err != nil {
+					s.WriteString(fmt.Sprintf("%s%s %-30s %s%s", cursorText, colorToUse, fileName, "error reading permission bits", colorReset))
+				} else {
+					s.WriteString(fmt.Sprintf("%s%s %-30s %s%s", cursorText, colorToUse, fileName, fileInfo.Mode(), colorReset))
 				}
 
 				if j < numColumns-1 {
