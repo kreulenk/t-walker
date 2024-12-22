@@ -24,15 +24,21 @@ type fileTracker struct {
 	path  string
 }
 
+// Saves the state of where the cursor was if the user hits 'b' to go back one directory
+type dirBackInfo struct {
+	cursor          int
+	minRowToDisplay int
+}
+
 type model struct {
-	dirInfo          fileTracker
-	cursor           int
-	oneDirBackCursor int
-	width            int
-	height           int
-	exitCmd          string
-	err              error
-	minRowToDisplay  int
+	dirInfo         fileTracker
+	cursor          int
+	oneDirBack      dirBackInfo
+	width           int
+	height          int
+	exitCmd         string
+	err             error
+	minRowToDisplay int
 }
 
 func getInitialFiles() tea.Msg {
@@ -52,19 +58,19 @@ func (m model) getCurrDirOneBack() (fileTracker, error) {
 	oneBackFilePath := "/" + filepath.Join(splitPath[0:len(splitPath)-1]...)
 	dirEntries, err := os.ReadDir(oneBackFilePath)
 	if err != nil {
-		return fileTracker{}, errMsg{err}
+		return m.dirInfo, errMsg{err}
 	}
 
-	return fileTracker{files: dirEntries, path: oneBackFilePath}, m.err
+	return fileTracker{files: dirEntries, path: oneBackFilePath}, nil
 }
 
 func (m model) walkIntoDir() (fileTracker, error) {
 	newPath := filepath.Join(m.dirInfo.path, m.dirInfo.files[m.cursor].Name())
 	dirEntries, err := os.ReadDir(newPath)
 	if err != nil {
-		return fileTracker{}, errMsg{err}
+		return m.dirInfo, errMsg{err}
 	}
-	return fileTracker{files: dirEntries, path: newPath}, m.err
+	return fileTracker{files: dirEntries, path: newPath}, nil
 }
 
 type errMsg struct{ err error }
@@ -78,6 +84,7 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	m.err = nil // Reset the error message if the user tries a new action
 	switch msg := msg.(type) {
 	case fileTracker:
 		m.dirInfo = msg
@@ -121,8 +128,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "b":
 			if m.dirInfo.path != "/" {
 				m.dirInfo, m.err = m.getCurrDirOneBack()
-				m.cursor = m.oneDirBackCursor
-				m.oneDirBackCursor = 0
+				m.cursor = m.oneDirBack.cursor
+				m.minRowToDisplay = m.oneDirBack.minRowToDisplay
+				m.oneDirBack.cursor = 0
 			}
 
 		case "c":
@@ -130,7 +138,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "e":
 			if m.dirInfo.files[m.cursor].IsDir() {
-				m.err = fmt.Errorf("cannot open directory %s", m.dirInfo.files[m.cursor].Name())
+				m.err = fmt.Errorf("cannot open file %s", m.dirInfo.files[m.cursor].Name())
+				return m, nil
 			}
 			editor := os.Getenv("EDITOR")
 			if editor == "" {
@@ -147,8 +156,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.dirInfo.files[m.cursor].IsDir() {
 				m.dirInfo, m.err = m.walkIntoDir()
-				m.oneDirBackCursor = m.cursor
-				m.cursor = 0
+				if m.err == nil {
+					m.oneDirBack.cursor = m.cursor
+					m.oneDirBack.minRowToDisplay = m.minRowToDisplay
+					m.cursor = 0
+				}
 			}
 		}
 		// After cursor updates, make sure the cursor is within bounds
@@ -162,10 +174,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	if m.exitCmd != "" {
 		return fmt.Sprintln("Executing command:", colorGreen, m.exitCmd, colorReset)
-	}
-
-	if m.err != nil {
-		return fmt.Sprintf("\nWe had some trouble: %v\n\n", m.err)
 	}
 
 	var s strings.Builder
@@ -224,7 +232,7 @@ func (m model) View() string {
 			s.WriteString("\n")
 		}
 	} else {
-		s.WriteString("Error retrieving files\n")
+		s.WriteString("No items to display in this directory...\n")
 	}
 
 	if m.err != nil {
@@ -232,7 +240,8 @@ func (m model) View() string {
 	} else {
 		s.WriteString("\n")
 	}
-	s.WriteString(fmt.Sprintf("Current Directory: %s | height: %d \n", m.dirInfo.path, m.height))
+	s.WriteString(fmt.Sprintf("Current Directory: %s\n", m.dirInfo.path))
+
 	return s.String()
 }
 

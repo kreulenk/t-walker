@@ -1,8 +1,11 @@
+// The display package contains functions that are used to determine what should be displayed on the screen given the
+// current cursor position, window width/height, and some other information.
+
 package display
 
 // The number of rows to subtract from the window height to determine what should be displayed. This is due to other
 // elements that are displayed on the screen.
-const rowsToSubtract = 4
+const rowsToSubtract = 5
 
 func ShouldPrintRow(currRow, windowHeight, minRowToDisplay int) bool {
 	maxRowToDisplay := minRowToDisplay + windowHeight - rowsToSubtract
