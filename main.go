@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"t-walker/pkg/display"
 )
 
 const (
@@ -31,6 +32,7 @@ type model struct {
 	height           int
 	exitCmd          string
 	err              error
+	minRowToDisplay  int
 }
 
 func getInitialFiles() tea.Msg {
@@ -149,21 +151,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor = 0
 			}
 		}
+		// After cursor updates, make sure the cursor is within bounds
+		m.minRowToDisplay = display.GetNewMinRowToDisplay(m.height, m.minRowToDisplay, numColumns, m.cursor)
 	}
 
-	// If we happen to get any other messages, don't-wrapper.sh do anything.
+	// If we happen to get any other messages, don't do anything.
 	return m, nil
-}
-
-func shouldPrint(currFileIndex, windowHeight, cursor int) bool {
-	windowHeight = windowHeight - 4 // Other lines also get printed
-	if cursor-currFileIndex < 0 && currFileIndex > windowHeight {
-		return false
-	}
-	if cursor-currFileIndex <= windowHeight {
-		return true
-	}
-	return false
 }
 
 func (m model) View() string {
@@ -184,15 +177,18 @@ func (m model) View() string {
 			numColumns = 1
 		}
 
-		for i := 0; i < len(m.dirInfo.files); i += numColumns {
-			for j := 0; j < numColumns; j++ {
-				if i+j >= len(m.dirInfo.files) {
+		for currFile := 0; currFile < len(m.dirInfo.files); currFile += numColumns {
+			if !(display.ShouldPrintRow(currFile/numColumns, m.height, m.minRowToDisplay)) {
+				continue
+			}
+			for currColumn := 0; currColumn < numColumns; currColumn++ {
+				if currFile+currColumn >= len(m.dirInfo.files) {
 					break
 				}
 
-				file := m.dirInfo.files[i+j]
+				file := m.dirInfo.files[currFile+currColumn]
 				cursorText := " " // no cursor
-				if m.cursor == i+j {
+				if m.cursor == currFile+currColumn {
 					cursorText = ">" // cursor!
 				}
 
@@ -221,7 +217,7 @@ func (m model) View() string {
 					s.WriteString(fmt.Sprintf("%s%s %-30s %s%s", cursorText, colorToUse, fileName, fileInfo.Mode(), colorReset))
 				}
 
-				if j < numColumns-1 {
+				if currColumn < numColumns-1 {
 					s.WriteString(" | ")
 				}
 			}
@@ -236,7 +232,7 @@ func (m model) View() string {
 	} else {
 		s.WriteString("\n")
 	}
-	s.WriteString("Current Directory: " + m.dirInfo.path + "\n")
+	s.WriteString(fmt.Sprintf("Current Directory: %s | height: %d \n", m.dirInfo.path, m.height))
 	return s.String()
 }
 
