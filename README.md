@@ -29,4 +29,6 @@ The following keybindings are available:
 - `b` - Go back one directory.
 - `e` - Edit the selected file. Defaults to vim but this can be overriden using the `EDITOR` environment variable.
 - `c` - Change into the selected directory from your shell. This will cause T-walker to exit.
+- `r` - Remove the selected file.
+- `s` - Filter the files in the current directory.
 - `q` - Quit the program.
