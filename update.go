@@ -96,8 +96,10 @@ func (m model) keyPressSearchMode(msg tea.KeyMsg) (model, tea.Cmd) {
 		}
 		m.cursor = 0
 	default:
-		m.searchStr = m.searchStr + msg.String()
-		m.cursor = 0
+		if len(msg.String()) == 1 && strings.ContainsAny(msg.String(), "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-") {
+			m.searchStr = m.searchStr + msg.String()
+			m.cursor = 0
+		}
 	}
 	m.dirInfo.searchFilteredFiles = filterFilesBySearch(m.dirInfo.files, m.searchStr)
 	return m, nil
