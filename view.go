@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strings"
 )
 
 const (
-	colorBlue   = "\033[34m"
-	colorPurple = "\033[35m"
-	colorGreen  = "\033[32m"
-	colorReset  = "\033[0m"
+	colorBlue      = "\033[34m"
+	colorPurple    = "\033[35m"
+	colorGreen     = "\033[32m"
+	colorLightBlue = "\033[36m"
+	colorReset     = "\033[0m"
 )
 
 const (
@@ -28,28 +28,28 @@ func (m model) View() string {
 			numColumns = 1
 		}
 
-		for currFile := 0; currFile < len(m.dirInfo.searchFilteredFiles); currFile += numColumns { // Iterate over files one row at a time
-			if !(shouldPrintRow(currFile/numColumns, m.height, m.minRowToDisplay)) {
+		for rowStartIndex := 0; rowStartIndex < len(m.dirInfo.searchFilteredFiles); rowStartIndex += numColumns { // Iterate over files one row at a time
+			if !(shouldPrintRow(rowStartIndex/numColumns, m.height, m.minRowToDisplay)) {
 				continue
 			}
-			for currColumn := 0; currColumn < numColumns; currColumn++ { // Iterate over every file in a single row
-				if currFile+currColumn >= len(m.dirInfo.searchFilteredFiles) {
+			for colIndex := 0; colIndex < numColumns; colIndex++ { // Iterate over every file in a single row
+				if rowStartIndex+colIndex >= len(m.dirInfo.searchFilteredFiles) {
 					break
 				}
 
-				file := m.dirInfo.searchFilteredFiles[currFile+currColumn]
+				file := m.dirInfo.searchFilteredFiles[rowStartIndex+colIndex]
 				cursorText := " "
-				if m.cursor == currFile+currColumn {
+				if m.cursor == rowStartIndex+colIndex {
 					cursorText = ">"
 				}
 
 				var colorToUse string
 				if file.IsDir() {
 					colorToUse = colorBlue
-				} else if file.Type()&os.ModeSymlink != 0 {
-					colorToUse = colorGreen
-				} else {
+				} else if isSymLinkDir(file, m.dirInfo.path) {
 					colorToUse = colorPurple
+				} else {
+					colorToUse = colorLightBlue
 				}
 
 				fileInfo, err := file.Info()
@@ -60,7 +60,7 @@ func (m model) View() string {
 				} else {
 					fileName = file.Name()
 				}
-				if file.IsDir() {
+				if file.IsDir() || isSymLinkDir(file, m.dirInfo.path) {
 					fileName = fileName + "/"
 				}
 
@@ -70,7 +70,7 @@ func (m model) View() string {
 					s.WriteString(fmt.Sprintf("%s%s %-30s %s%s", cursorText, colorToUse, fileName, fileInfo.Mode(), colorReset))
 				}
 
-				if currColumn < numColumns-1 {
+				if colIndex < numColumns-1 {
 					s.WriteString(" | ")
 				}
 			}

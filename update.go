@@ -226,8 +226,27 @@ func (m model) getCurrDirOneBack() (fileTracker, error) {
 	return fileTracker{files: dirEntries, searchFilteredFiles: dirEntries, path: oneBackFilePath}, nil
 }
 
+func isSymLinkDir(file os.DirEntry, path string) bool {
+	if file.Type()&os.ModeSymlink != 0 {
+		fullPath := filepath.Join(path, file.Name())
+
+		linkPath, err := filepath.EvalSymlinks(fullPath)
+		if err != nil {
+			return false
+		}
+		fileInfo, err := os.Stat(linkPath)
+		if err != nil {
+			return false
+		}
+		return fileInfo.IsDir()
+	}
+	return false
+}
+
 func (m model) walkIntoDir() (fileTracker, error) {
-	newPath := filepath.Join(m.dirInfo.path, m.dirInfo.searchFilteredFiles[m.cursor].Name())
+	filename := m.dirInfo.searchFilteredFiles[m.cursor].Name()
+	newPath := filepath.Join(m.dirInfo.path, filename)
+
 	dirEntries, err := os.ReadDir(newPath)
 	if err != nil {
 		return m.dirInfo, errMsg{err}

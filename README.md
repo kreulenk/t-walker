@@ -36,3 +36,8 @@ The following keybindings are available:
 - `s` - Search through the files in the current directory.
 - `v` - View the selected file using the `less` program.
 - `q` - Quit the program.
+
+All filesystem objects are categorized using the following colors:
+- `File` - Light Blue
+- `Directory` - Dark Blue
+- `Symbolic Link Directory` - Purple
