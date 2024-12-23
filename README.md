@@ -34,4 +34,5 @@ The following keybindings are available:
 - `c` - Change into the selected directory from your shell. This will cause T-walker to exit.
 - `r` - Remove the selected file.
 - `s` - Filter the files in the current directory.
+- `v` - View the selected file using the `less` program.
 - `q` - Quit the program.

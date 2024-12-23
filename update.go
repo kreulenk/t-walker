@@ -64,6 +64,19 @@ func (m model) keyPressNormalMode(msg tea.KeyMsg) (model, tea.Cmd) {
 		if err != nil {
 			m.err = fmt.Errorf("error opening editor: %v", err)
 		}
+	case "v":
+		if m.dirInfo.searchFilteredFiles[m.cursor].IsDir() {
+			m.err = fmt.Errorf("cannot view file %s", m.dirInfo.searchFilteredFiles[m.cursor].Name())
+			return m, nil
+		}
+		viewFileCmd := exec.Command("less", filepath.Join(m.dirInfo.path, m.dirInfo.searchFilteredFiles[m.cursor].Name()))
+		viewFileCmd.Stdout = os.Stdout
+		viewFileCmd.Stdin = os.Stdin
+		viewFileCmd.Stderr = os.Stderr
+		err := viewFileCmd.Run()
+		if err != nil {
+			m.err = fmt.Errorf("error opening file: %v", err)
+		}
 	case "s":
 		m.mode = search
 	case "r":
