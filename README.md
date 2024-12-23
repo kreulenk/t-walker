@@ -24,10 +24,10 @@ with the arrow keys and enter into directories files with the enter key.
 
 
 The following keybindings are available:
-- `Up Arrow` - Move up one file.
-- `Down Arrow` - Move down one file.
-- `Left Arrow` - Move left one file.
-- `Right Arrow` - Move right one file.
+- `Up Arrow` or `k` - Move up one file.
+- `Down Arrow` or `j` - Move down one file.
+- `Left Arrow` or `h` - Move left one file.
+- `Right Arrow` or `l` - Move right one file.
 - `Enter` - Enter into a directory.
 - `b` - Go back one directory.
 - `e` - Edit the selected file. Defaults to vim but this can be overriden using the `EDITOR` environment variable.

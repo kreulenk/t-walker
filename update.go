@@ -16,22 +16,22 @@ func (m model) keyPressNormalMode(msg tea.KeyMsg) (model, tea.Cmd) {
 		return m, tea.Quit
 
 		// The "up" and "k" keys move the cursor up
-	case "up":
+	case "up", "k":
 		if m.cursor > numColumns-1 {
 			m.cursor = m.cursor - numColumns
 		}
 
 	// The "down" and "j" keys move the cursor down
-	case "down":
+	case "down", "j":
 		if m.cursor < len(m.dirInfo.searchFilteredFiles)-1 {
 			m.cursor = m.cursor + numColumns
 		}
 
-	case "right":
+	case "right", "l":
 		if m.cursor < len(m.dirInfo.searchFilteredFiles)-1 {
 			m.cursor++
 		}
-	case "left":
+	case "left", "h":
 		if m.cursor > 0 {
 			m.cursor--
 		}
