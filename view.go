@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -18,10 +19,6 @@ const (
 )
 
 func (m model) View() string {
-	if m.exitCmd != "" { // Used by t-wrapper.sh to execute a command on the actual shell session that called t-walker
-		return fmt.Sprintln("Executing command:", colorGreen, m.exitCmd, colorReset)
-	}
-
 	var s strings.Builder
 
 	if len(m.dirInfo.searchFilteredFiles) > 0 {
@@ -49,6 +46,8 @@ func (m model) View() string {
 				var colorToUse string
 				if file.IsDir() {
 					colorToUse = colorBlue
+				} else if file.Type()&os.ModeSymlink != 0 {
+					colorToUse = colorGreen
 				} else {
 					colorToUse = colorPurple
 				}

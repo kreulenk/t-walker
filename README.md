@@ -3,10 +3,10 @@
 T-Walker is a simple terminal user interface designed to be the quickest way to navigate directories and quickly edit files.
 
 ## Installation
-Installing T-Walker is simple. Just clone the repository and run the install directive from the MakeFile.
+Installing T-Walker is simple. Just clone the repository and run the `install` directive from the MakeFile.
 
-The install directive assumes that you are using zsh as your shell. If you are using a different shell, you will need to
-manually add the `t` command to your shell's sourcing file.
+The `install` directive assumes that you are using zsh as your shell. If you are using a different shell, you will need to
+manually add the `alias t="source /usr/local/bin/t-wrapper.sh"` to your shell's sourcing file.
 
 ```bash
 git clone https://github.com/kreulenk/t-walker.git
@@ -30,9 +30,9 @@ The following keybindings are available:
 - `Right Arrow` or `l` - Move right one file.
 - `Enter` - Enter into a directory.
 - `b` - Go back one directory.
-- `e` - Edit the selected file. Defaults to vim but this can be overriden using the `EDITOR` environment variable.
+- `e` - Edit the selected file. Defaults to vim but this can be overridden using the `EDITOR` environment variable.
 - `c` - Change into the selected directory from your shell. This will cause T-walker to exit.
 - `r` - Remove the selected file.
-- `s` - Filter the files in the current directory.
+- `s` - Search through the files in the current directory.
 - `v` - View the selected file using the `less` program.
 - `q` - Quit the program.

@@ -79,7 +79,7 @@ func (m model) keyPressNormalMode(msg tea.KeyMsg) (model, tea.Cmd) {
 		}
 
 	case "c":
-		m.exitCmd = fmt.Sprintf("cd %s", m.dirInfo.path)
+		fmt.Printf("Executing command: %s cd %s %s\n", colorGreen, m.dirInfo.path, colorReset)
 		return m, tea.Quit
 	case "e":
 		if err := openFileInEditor(m.dirInfo.searchFilteredFiles, m.dirInfo.path, m.cursor); err != nil {
@@ -94,7 +94,8 @@ func (m model) keyPressNormalMode(msg tea.KeyMsg) (model, tea.Cmd) {
 	case "r":
 		m.mode = removeFileConfirm
 	case "enter":
-		if m.dirInfo.searchFilteredFiles[m.cursor].IsDir() {
+		file := m.dirInfo.searchFilteredFiles[m.cursor]
+		if file.IsDir() || file.Type()&os.ModeSymlink != 0 {
 			m.dirInfo, m.err = m.walkIntoDir()
 			if m.err == nil {
 				m.oneDirBack.cursor = m.cursor

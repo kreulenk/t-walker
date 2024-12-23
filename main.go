@@ -20,7 +20,6 @@ type model struct {
 	oneDirBack      dirBackInfo
 	width           int
 	height          int
-	exitCmd         string // Used to signal the command to run to t-wrapper.sh
 	err             error
 	minRowToDisplay int // The minimum row that should be displayed. Updated via getNewMinRowToDisplay
 	mode            appMode
