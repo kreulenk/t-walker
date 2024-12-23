@@ -5,6 +5,9 @@ T-Walker is a simple terminal user interface designed to be the quickest way to 
 ## Installation
 Installing T-Walker is simple. Just clone the repository and run the install directive from the MakeFile.
 
+The install directive assumes that you are using zsh as your shell. If you are using a different shell, you will need to
+manually add the `t` command to your shell's sourcing file.
+
 ```bash
 git clone https://github.com/kreulenk/t-walker.git
 cd t-walker
