@@ -9,6 +9,40 @@ import (
 	"strings"
 )
 
+func openFileInEditor(currFiles []os.DirEntry, path string, cursor int) error {
+	if currFiles[cursor].IsDir() {
+		return fmt.Errorf("cannot open directory in editor %s", currFiles[cursor].Name())
+	}
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = "vi"
+	}
+	openEditorCmd := exec.Command(editor, filepath.Join(path, currFiles[cursor].Name()))
+	openEditorCmd.Stdout = os.Stdout
+	openEditorCmd.Stdin = os.Stdin
+	openEditorCmd.Stderr = os.Stderr
+	err := openEditorCmd.Run()
+	if err != nil {
+		return fmt.Errorf("error opening editor: %v", err)
+	}
+	return nil
+}
+
+func viewFile(currFiles []os.DirEntry, path string, cursor int) error {
+	if currFiles[cursor].IsDir() {
+		return fmt.Errorf("cannot view directory %s", currFiles[cursor].Name())
+	}
+	viewFileCmd := exec.Command("less", filepath.Join(path, currFiles[cursor].Name()))
+	viewFileCmd.Stdout = os.Stdout
+	viewFileCmd.Stdin = os.Stdin
+	viewFileCmd.Stderr = os.Stderr
+	err := viewFileCmd.Run()
+	if err != nil {
+		return fmt.Errorf("error viewing file: %v", err)
+	}
+	return nil
+}
+
 func (m model) keyPressNormalMode(msg tea.KeyMsg) (model, tea.Cmd) {
 	numColumns := m.width / colWidth
 	switch msg.String() {
@@ -48,34 +82,12 @@ func (m model) keyPressNormalMode(msg tea.KeyMsg) (model, tea.Cmd) {
 		m.exitCmd = fmt.Sprintf("cd %s", m.dirInfo.path)
 		return m, tea.Quit
 	case "e":
-		if m.dirInfo.searchFilteredFiles[m.cursor].IsDir() {
-			m.err = fmt.Errorf("cannot open file %s", m.dirInfo.searchFilteredFiles[m.cursor].Name())
-			return m, nil
-		}
-		editor := os.Getenv("EDITOR")
-		if editor == "" {
-			editor = "vi"
-		}
-		openEditorCmd := exec.Command(editor, filepath.Join(m.dirInfo.path, m.dirInfo.searchFilteredFiles[m.cursor].Name()))
-		openEditorCmd.Stdout = os.Stdout
-		openEditorCmd.Stdin = os.Stdin
-		openEditorCmd.Stderr = os.Stderr
-		err := openEditorCmd.Run()
-		if err != nil {
-			m.err = fmt.Errorf("error opening editor: %v", err)
+		if err := openFileInEditor(m.dirInfo.searchFilteredFiles, m.dirInfo.path, m.cursor); err != nil {
+			m.err = err
 		}
 	case "v":
-		if m.dirInfo.searchFilteredFiles[m.cursor].IsDir() {
-			m.err = fmt.Errorf("cannot view file %s", m.dirInfo.searchFilteredFiles[m.cursor].Name())
-			return m, nil
-		}
-		viewFileCmd := exec.Command("less", filepath.Join(m.dirInfo.path, m.dirInfo.searchFilteredFiles[m.cursor].Name()))
-		viewFileCmd.Stdout = os.Stdout
-		viewFileCmd.Stdin = os.Stdin
-		viewFileCmd.Stderr = os.Stderr
-		err := viewFileCmd.Run()
-		if err != nil {
-			m.err = fmt.Errorf("error opening file: %v", err)
+		if err := viewFile(m.dirInfo.searchFilteredFiles, m.dirInfo.path, m.cursor); err != nil {
+			m.err = err
 		}
 	case "s":
 		m.mode = search
