@@ -85,10 +85,12 @@ func (m model) keyPressNormalMode(msg tea.KeyMsg) (model, tea.Cmd) {
 		if err := openFileInEditor(m.dirInfo.searchFilteredFiles, m.dirInfo.path, m.cursor); err != nil {
 			m.err = err
 		}
+		return m, tea.ClearScreen
 	case "v":
 		if err := viewFile(m.dirInfo.searchFilteredFiles, m.dirInfo.path, m.cursor); err != nil {
 			m.err = err
 		}
+		return m, tea.ClearScreen
 	case "s":
 		m.mode = search
 	case "r":
